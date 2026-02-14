@@ -87,13 +87,14 @@ export function LandingPage() {
 
               {/* CTAs */}
               <div className="mt-10 flex flex-wrap gap-4 animate-fade-in-up animate-delay-3">
-                <button
+                <a
+                  href="/wiki"
                   className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-mono font-bold
                              bg-[#4ade80] text-black rounded-lg
                              hover:bg-[#22c55e] transition-all pulse-green cursor-pointer"
                 >
-                  <span className="text-black font-extrabold">Free</span> open source
-                </button>
+                  <span className="text-black font-extrabold">Read</span> the docs
+                </a>
                 <a
                   href="/dashboard"
                   className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-mono
