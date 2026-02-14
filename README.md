@@ -78,7 +78,7 @@ Each indicator scores **-100 to +100**. The composite (equal-weight average) det
 | Charting | TradingView [lightweight-charts](https://github.com/nickvdyck/lightweight-charts) v5 |
 | Market Data | Binance REST + WebSocket (client-side, no API key needed) |
 | Indicators | Pure TypeScript (EMA, RSI, MACD, Bollinger) |
-| AI | Claude via AWS Bedrock SDK (SigV4 signing) |
+| AI | Grok 4.1 Fast via [OpenRouter](https://openrouter.ai) SDK |
 | Fonts | JetBrains Mono + Geist |
 
 ---
@@ -88,7 +88,7 @@ Each indicator scores **-100 to +100**. The composite (equal-weight average) det
 ### Prerequisites
 
 - Node.js 18+
-- AWS account with Bedrock model access enabled for Claude
+- An [OpenRouter](https://openrouter.ai) API key
 
 ### 1. Clone & install
 
@@ -98,25 +98,17 @@ cd ryu-self-learning-agents
 npm install
 ```
 
-### 2. Configure AWS credentials
+### 2. Configure OpenRouter
 
 Create `.env.local` in the project root:
 
 ```bash
-# AWS SigV4 credentials (temporary STS -- rotate as needed)
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-AWS_SESSION_TOKEN=your-session-token    # required for STS temp credentials
-AWS_DEFAULT_REGION=us-west-2
+# OpenRouter API key (get one at https://openrouter.ai/keys)
+OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
 
-# Bedrock model (change to match your enabled model)
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
-BEDROCK_REGION=us-west-2
+# Model (default: x-ai/grok-4.1-fast — see https://openrouter.ai/models for options)
+OPENROUTER_MODEL=x-ai/grok-4.1-fast
 ```
-
-The AWS SDK picks up `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` automatically. No manual signing needed.
-
-**Enable model access**: Go to **AWS Console > Amazon Bedrock > Model access** and enable the Claude model you want to use. Without this, you'll get a `AccessDeniedException`.
 
 ### 3. Run
 
@@ -126,22 +118,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) for the landing page, or go directly to [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
 
-### 4. Test the Bedrock connection
+### 4. Test the OpenRouter connection
 
 ```bash
-# Quick test with curl (replace with your credentials)
-export AWS_ACCESS_KEY_ID="your-key"
-export AWS_SECRET_ACCESS_KEY="your-secret"
-export AWS_SESSION_TOKEN="your-token"
-
-# Using the AWS CLI
-aws bedrock-runtime invoke-model \
-  --region us-west-2 \
-  --model-id anthropic.claude-3-5-sonnet-20241022-v2:0 \
-  --content-type application/json \
-  --accept application/json \
-  --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":100,"messages":[{"role":"user","content":"Say hello"}]}' \
-  /dev/stdout
+curl https://openrouter.ai/api/v1/chat/completions \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"x-ai/grok-4.1-fast","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
 ---
@@ -159,7 +142,7 @@ ryu-self-learning-agents/
 |   |   +-- page.tsx                      # Dashboard route (/dashboard)
 |   +-- api/
 |       +-- analyze/
-|           +-- route.ts                  # POST: Claude AI analysis endpoint
+|           +-- route.ts                  # POST: AI analysis endpoint (OpenRouter)
 |
 |-- components/
 |   |-- landing/
@@ -179,7 +162,7 @@ ryu-self-learning-agents/
 |   +-- ui/                               # shadcn/ui primitives (button, card, badge, etc.)
 |
 |-- lib/
-|   |-- bedrock.ts                        # AWS Bedrock client (SigV4 via SDK)
+|   |-- openrouter.ts                     # OpenRouter LLM client (@openrouter/sdk)
 |   |-- types.ts                          # All domain interfaces
 |   |-- utils.ts                          # cn() utility (clsx + tailwind-merge)
 |   |-- binance/
@@ -211,7 +194,7 @@ The dashboard follows a **unidirectional data flow**:
 2. **Live merge**: A WebSocket connection streams live ticks. When `isClosed=false`, the last candle updates in-place (live price). When `isClosed=true`, a new candle is appended.
 3. **Indicators**: `computeAllIndicators(candles)` runs pure-function math on the candle array. Needs >= 34 candles (26 for MACD slow period + 9 for signal = 34 minimum).
 4. **Signal**: `generateSignal(indicators, candles)` scores each indicator (-100 to +100), averages them, and maps to BUY/SELL/HOLD.
-5. **AI Analysis** (on-demand): User clicks "Run AI Analysis" -> POST `/api/analyze` -> Claude receives the last 20 candles + all indicator values + the algorithmic signal -> returns structured JSON with summary, factors, and per-indicator breakdowns.
+5. **AI Analysis** (on-demand): User clicks "Run AI Analysis" -> POST `/api/analyze` -> the LLM (Grok 4.1 via OpenRouter) receives the last 20 candles + all indicator values + the algorithmic signal -> returns structured JSON with summary, factors, and per-indicator breakdowns.
 
 ### WebSocket Reconnection
 
@@ -228,13 +211,13 @@ All indicators are **stateless pure functions** — they take `Candle[]` and ret
 
 ### AI Prompt Design
 
-The prompt sent to Claude includes:
+The prompt sent to the LLM includes:
 - Last 20 OHLCV candles as a formatted table
 - All computed indicator values (exact numbers)
 - The algorithmic signal with per-indicator scores and reasons
 - Instructions to explain in **layman's terms** for someone who understands candlestick charts but not the math behind indicators
 
-Claude returns structured JSON with `summary`, `bullishFactors`, `bearishFactors`, `riskFactors`, and `indicatorBreakdown` — each breakdown item includes the indicator name, value, interpretation, and sentiment.
+The LLM returns structured JSON with `summary`, `bullishFactors`, `bearishFactors`, `riskFactors`, and `indicatorBreakdown` — each breakdown item includes the indicator name, value, interpretation, and sentiment.
 
 ### Charting (lightweight-charts v5)
 
@@ -252,7 +235,7 @@ Time scales are synchronized — scrolling one chart scrolls the other.
 
 ### `POST /api/analyze`
 
-Sends market data to Claude for AI analysis.
+Sends market data to the LLM for AI analysis.
 
 **Request body:**
 
@@ -296,7 +279,7 @@ Sends market data to Claude for AI analysis.
 
 **Error responses:**
 - `400` — Missing required fields
-- `401` — AWS credentials expired or invalid
+- `401` — OpenRouter API key invalid or missing
 - `500` — Analysis failed (check server logs)
 
 ---
@@ -305,12 +288,8 @@ Sends market data to Claude for AI analysis.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AWS_ACCESS_KEY_ID` | Yes | AWS IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | Yes | AWS IAM secret key |
-| `AWS_SESSION_TOKEN` | For STS | Required when using temporary STS credentials |
-| `AWS_DEFAULT_REGION` | No | Defaults to `us-west-2` |
-| `BEDROCK_MODEL_ID` | No | Defaults to `global.anthropic.claude-opus-4-6-v1` |
-| `BEDROCK_REGION` | No | Defaults to `us-west-2` |
+| `OPENROUTER_API_KEY` | Yes | OpenRouter API key ([get one here](https://openrouter.ai/keys)) |
+| `OPENROUTER_MODEL` | No | Defaults to `x-ai/grok-4.1-fast` |
 
 **Note:** Binance market data requires no API key — it uses the public REST and WebSocket endpoints.
 
@@ -327,17 +306,20 @@ npm run lint      # Run ESLint
 
 ### Switching models
 
-To use a different Claude model, change `BEDROCK_MODEL_ID` in `.env.local`:
+To use a different model, change `OPENROUTER_MODEL` in `.env.local`. Any model on [OpenRouter](https://openrouter.ai/models) works:
 
 ```bash
-# Claude 3.5 Sonnet (fast, widely available)
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+# Grok 4.1 Fast (default — fast, great for structured JSON)
+OPENROUTER_MODEL=x-ai/grok-4.1-fast
 
-# Claude Opus 4.6 (most capable, requires model access enabled)
-BEDROCK_MODEL_ID=global.anthropic.claude-opus-4-6-v1
+# Claude Sonnet 4.5 (Anthropic)
+OPENROUTER_MODEL=anthropic/claude-sonnet-4-5
 
-# Claude Opus 4.6 (US cross-region inference)
-BEDROCK_MODEL_ID=us.anthropic.claude-opus-4-6-v1
+# GPT-4o (OpenAI)
+OPENROUTER_MODEL=openai/gpt-4o
+
+# Gemini 2.5 Flash (Google)
+OPENROUTER_MODEL=google/gemini-2.5-flash-preview
 ```
 
 ### Adding a new indicator

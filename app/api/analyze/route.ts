@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { AIAnalysis, Candle, IndicatorData, TradingSignal } from "@/lib/types";
-import { askBedrockJSON } from "@/lib/bedrock";
+import { askLLMJSON } from "@/lib/openrouter";
 import { buildAnalysisPrompt } from "@/prompts/analyze-signal";
 
 interface AnalyzeRequestBody {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const prompt = buildAnalysisPrompt(candles, indicators, signal);
 
-    const analysis = await askBedrockJSON<AIAnalysis>(prompt, {
+    const analysis = await askLLMJSON<AIAnalysis>(prompt, {
       system:
         "You are Ryujin, an expert Bitcoin trading signal analyst. " +
         "Respond with valid JSON only. Be precise, reference actual values, " +
@@ -38,16 +38,17 @@ export async function POST(request: Request) {
 
     console.error("[/api/analyze] Error:", message);
 
-    // Detect AWS credential / access errors
+    // Detect API key / auth errors
     const isAuthError =
-      message.includes("ExpiredTokenException") ||
-      message.includes("UnrecognizedClientException") ||
-      message.includes("AccessDeniedException") ||
-      message.includes("credentials");
+      message.includes("401") ||
+      message.includes("403") ||
+      message.includes("Unauthorized") ||
+      message.includes("invalid_api_key") ||
+      message.includes("OPENROUTER_API_KEY");
     if (isAuthError) {
       return NextResponse.json(
         {
-          error: "AWS credentials expired or invalid. Rotate AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN in .env.local.",
+          error: "OpenRouter API key invalid or missing. Check OPENROUTER_API_KEY in .env.local.",
           detail: message,
         },
         { status: 401 }
