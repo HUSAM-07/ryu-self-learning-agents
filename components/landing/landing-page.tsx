@@ -7,6 +7,7 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 const NAV_LINKS = [
   { label: "Home", href: "#" },
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Learning", href: "/learning" },
   { label: "Wiki", href: "/wiki" },
 ];
 
@@ -24,8 +25,8 @@ const FEATURES = [
     desc: "Live Binance WebSocket data",
   },
   {
-    title: "Open Source",
-    desc: "Transparent & extensible",
+    title: "Self-Learning",
+    desc: "Evolves from feedback",
   },
 ];
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Interval, TradingSymbol, SymbolConfig, TradingSignal, IndicatorData } from "@/lib/types";
+import { updateOutcomes } from "@/lib/learning/store";
 import { SYMBOLS } from "@/lib/types";
 import { useBinance } from "@/lib/binance/use-binance";
 import { computeAllIndicators } from "@/lib/indicators";
@@ -35,6 +36,13 @@ export function DashboardShell() {
     [indicators, candles]
   );
 
+  // Update paper trade outcomes when candle data refreshes
+  useEffect(() => {
+    if (candles.length > 0) {
+      updateOutcomes(candles[candles.length - 1].close, symbol);
+    }
+  }, [candles, symbol]);
+
   function toggleOverlay(overlay: "ema" | "bollinger") {
     setOverlays((prev) => ({ ...prev, [overlay]: !prev[overlay] }));
   }
@@ -50,6 +58,12 @@ export function DashboardShell() {
               <span className="font-bold text-sm tracking-tight font-mono">Ryujin</span>
             </Link>
             <SymbolToggle value={symbol} onChange={setSymbol} />
+            <Link
+              href="/learning"
+              className="text-[10px] font-mono text-muted-foreground hover:text-green-400 transition-colors"
+            >
+              Learning
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <ConnectionStatus status={status} />
@@ -101,6 +115,8 @@ export function DashboardShell() {
                 signal={signal}
                 candles={candles}
                 indicators={indicators}
+                symbol={symbol}
+                interval={interval}
               />
             </div>
           </div>

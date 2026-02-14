@@ -7,12 +7,13 @@ interface AnalyzeRequestBody {
   candles: Candle[];
   indicators: IndicatorData;
   signal: TradingSignal;
+  learnedRules?: string[];
 }
 
 export async function POST(request: Request) {
   try {
     const body: AnalyzeRequestBody = await request.json();
-    const { candles, indicators, signal } = body;
+    const { candles, indicators, signal, learnedRules } = body;
 
     if (!candles?.length || !indicators || !signal) {
       return NextResponse.json(
@@ -23,11 +24,21 @@ export async function POST(request: Request) {
 
     const prompt = buildAnalysisPrompt(candles, indicators, signal);
 
+    // Build system prompt with learned rules
+    let system =
+      "You are Ryujin, an expert Bitcoin trading signal analyst. " +
+      "Respond with valid JSON only. Be precise, reference actual values, " +
+      "and explain in layman's terms.";
+
+    if (learnedRules && learnedRules.length > 0) {
+      system +=
+        "\n\n## Learned Rules (from past performance analysis)\n" +
+        "Apply these rules when analyzing — they were derived from self-reflection on previous signal accuracy:\n" +
+        learnedRules.map((r, i) => `${i + 1}. ${r}`).join("\n");
+    }
+
     const analysis = await askLLMJSON<AIAnalysis>(prompt, {
-      system:
-        "You are Ryujin, an expert Bitcoin trading signal analyst. " +
-        "Respond with valid JSON only. Be precise, reference actual values, " +
-        "and explain in layman's terms.",
+      system,
       max_tokens: 2048,
       temperature: 0.3,
     });
@@ -38,7 +49,6 @@ export async function POST(request: Request) {
 
     console.error("[/api/analyze] Error:", message);
 
-    // Detect API key / auth errors
     const isAuthError =
       message.includes("401") ||
       message.includes("403") ||

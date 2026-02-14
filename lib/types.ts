@@ -162,3 +162,46 @@ export interface DetectedPattern {
 
 /** WebSocket connection states */
 export type WSStatus = "connecting" | "connected" | "disconnected" | "error";
+
+// ── Self-Learning Types ──
+
+/** A logged signal with outcome tracking */
+export interface SignalRecord {
+  id: string;
+  timestamp: number;
+  symbol: string;
+  interval: string;
+  direction: SignalDirection;
+  confidence: number;
+  composite: number;
+  entryPrice: number;
+  marketBias?: number;
+  summary: string;
+  outcomePrice?: number;
+  outcomeTimestamp?: number;
+  pnlPercent?: number;
+  feedback?: SignalFeedback;
+}
+
+/** User feedback on a signal */
+export interface SignalFeedback {
+  rating: "accurate" | "inaccurate";
+  note: string;
+  timestamp: number;
+}
+
+/** A rule learned by the AI from self-reflection */
+export interface LearnedRule {
+  id: string;
+  rule: string;
+  source: "self-reflection" | "user-feedback";
+  createdAt: number;
+  version: number;
+}
+
+/** Full learning state persisted in localStorage */
+export interface LearningState {
+  signals: SignalRecord[];
+  rules: LearnedRule[];
+  promptVersion: number;
+}
