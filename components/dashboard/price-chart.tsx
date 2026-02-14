@@ -23,6 +23,17 @@ interface PriceChartProps {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnySeries = ISeriesApi<any>;
 
+function getChartColors() {
+  const isDark = document.documentElement.classList.contains("dark");
+  return {
+    textColor: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
+    gridColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.06)",
+    borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.08)",
+    crosshairLabelBg: isDark ? "#1a1a1a" : "#f5f5f5",
+    rsiRefLine: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+  };
+}
+
 export function PriceChart({ candles, overlays }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rsiContainerRef = useRef<HTMLDivElement>(null);
@@ -42,26 +53,27 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
     if (!containerRef.current || !rsiContainerRef.current) return;
 
     // Main chart
+    const colors = getChartColors();
     const chart = createChart(containerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "rgba(255,255,255,0.4)",
+        textColor: colors.textColor,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.03)" },
-        horzLines: { color: "rgba(255,255,255,0.03)" },
+        vertLines: { color: colors.gridColor },
+        horzLines: { color: colors.gridColor },
       },
       crosshair: {
-        vertLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: "#1a1a1a" },
-        horzLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: "#1a1a1a" },
+        vertLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: colors.crosshairLabelBg },
+        horzLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: colors.crosshairLabelBg },
       },
       rightPriceScale: {
-        borderColor: "rgba(255,255,255,0.05)",
+        borderColor: colors.borderColor,
       },
       timeScale: {
-        borderColor: "rgba(255,255,255,0.05)",
+        borderColor: colors.borderColor,
         timeVisible: true,
       },
       handleScroll: { vertTouchDrag: false },
@@ -117,16 +129,16 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
     const rsiChart = createChart(rsiContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "rgba(255,255,255,0.4)",
+        textColor: colors.textColor,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.03)" },
-        horzLines: { color: "rgba(255,255,255,0.03)" },
+        vertLines: { color: colors.gridColor },
+        horzLines: { color: colors.gridColor },
       },
       rightPriceScale: {
-        borderColor: "rgba(255,255,255,0.05)",
+        borderColor: colors.borderColor,
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       timeScale: {
@@ -135,7 +147,7 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
       handleScroll: { vertTouchDrag: false },
       crosshair: {
         vertLine: { visible: false },
-        horzLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: "#1a1a1a" },
+        horzLine: { color: "rgba(74,222,128,0.3)", labelBackgroundColor: colors.crosshairLabelBg },
       },
     });
 
@@ -147,14 +159,14 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
 
     // RSI reference lines (30 and 70)
     const rsi30 = rsiChart.addSeries(LineSeries, {
-      color: "rgba(255,255,255,0.1)",
+      color: colors.rsiRefLine,
       lineWidth: 1,
       lineStyle: 2,
       priceLineVisible: false,
       lastValueVisible: false,
     });
     const rsi70 = rsiChart.addSeries(LineSeries, {
-      color: "rgba(255,255,255,0.1)",
+      color: colors.rsiRefLine,
       lineWidth: 1,
       lineStyle: 2,
       priceLineVisible: false,
@@ -174,6 +186,35 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
       if (range) chart.timeScale().setVisibleLogicalRange(range);
     });
 
+    // Watch for theme changes and update chart colors
+    const themeObserver = new MutationObserver(() => {
+      const c = getChartColors();
+      const layoutOpts = { layout: { textColor: c.textColor } };
+      const gridOpts = { grid: { vertLines: { color: c.gridColor }, horzLines: { color: c.gridColor } } };
+      chart.applyOptions({
+        ...layoutOpts,
+        ...gridOpts,
+        crosshair: {
+          vertLine: { labelBackgroundColor: c.crosshairLabelBg },
+          horzLine: { labelBackgroundColor: c.crosshairLabelBg },
+        },
+        rightPriceScale: { borderColor: c.borderColor },
+        timeScale: { borderColor: c.borderColor },
+      });
+      rsiChart.applyOptions({
+        ...layoutOpts,
+        ...gridOpts,
+        rightPriceScale: { borderColor: c.borderColor },
+        crosshair: { horzLine: { labelBackgroundColor: c.crosshairLabelBg } },
+      });
+      rsi30.applyOptions({ color: c.rsiRefLine });
+      rsi70.applyOptions({ color: c.rsiRefLine });
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     // Handle resize
     const observer = new ResizeObserver(() => {
       if (containerRef.current) {
@@ -186,6 +227,7 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
     observer.observe(containerRef.current);
 
     return () => {
+      themeObserver.disconnect();
       observer.disconnect();
       chart.remove();
       rsiChart.remove();
@@ -266,10 +308,10 @@ export function PriceChart({ candles, overlays }: PriceChartProps) {
   return (
     <div className="flex flex-col">
       <div ref={containerRef} className="w-full h-[400px]" />
-      <div className="border-t border-white/5">
+      <div className="border-t border-border">
         <div className="flex items-center gap-2 px-2 py-1">
-          <span className="text-[10px] font-mono text-white/30">RSI(14)</span>
-          <span className="text-[10px] font-mono text-white/20">30 ── 70</span>
+          <span className="text-[10px] font-mono text-muted-foreground">RSI(14)</span>
+          <span className="text-[10px] font-mono text-muted-foreground/50">30 ── 70</span>
         </div>
         <div ref={rsiContainerRef} className="w-full h-[100px]" />
       </div>

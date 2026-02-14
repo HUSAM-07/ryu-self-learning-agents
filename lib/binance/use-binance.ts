@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Candle, Interval, WSStatus } from "@/lib/types";
+import type { Candle, Interval, TradingSymbol, WSStatus } from "@/lib/types";
 import { fetchKlines } from "./client";
 import { BinanceWS } from "./websocket";
 
@@ -20,7 +20,7 @@ interface UseBinanceReturn {
  * (live price). When `isClosed` is true the candle is finalized and a
  * new one begins.
  */
-export function useBinance(interval: Interval): UseBinanceReturn {
+export function useBinance(symbol: TradingSymbol, interval: Interval): UseBinanceReturn {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [status, setStatus] = useState<WSStatus>("disconnected");
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ export function useBinance(interval: Interval): UseBinanceReturn {
       setError(null);
 
       try {
-        const historical = await fetchKlines(interval, 200);
+        const historical = await fetchKlines(symbol, interval, 200);
         if (cancelled) return;
         setCandles(historical);
       } catch (err) {
@@ -73,7 +73,7 @@ export function useBinance(interval: Interval): UseBinanceReturn {
 
       // Start WebSocket after REST data is loaded
       wsRef.current?.disconnect();
-      const ws = new BinanceWS(interval, handleCandle, setStatus);
+      const ws = new BinanceWS(symbol, interval, handleCandle, setStatus);
       wsRef.current = ws;
       ws.connect();
     }
@@ -85,7 +85,7 @@ export function useBinance(interval: Interval): UseBinanceReturn {
       wsRef.current?.disconnect();
       wsRef.current = null;
     };
-  }, [interval, handleCandle]);
+  }, [symbol, interval, handleCandle]);
 
   return { candles, status, loading, error };
 }

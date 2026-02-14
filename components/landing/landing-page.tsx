@@ -2,12 +2,12 @@
 
 import { DragonLogo } from "./dragon-logo";
 import { AnimatedChart } from "./animated-chart";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "About", href: "#about" },
-  { label: "Technical Paper", href: "#paper" },
 ];
 
 const FEATURES = [
@@ -31,9 +31,9 @@ const FEATURES = [
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white bg-grid">
+    <div className="min-h-screen bg-background text-foreground bg-grid">
       {/* ── Header ────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
           {/* Logo */}
           <a href="#" className="flex items-center gap-3">
@@ -47,7 +47,7 @@ export function LandingPage() {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm text-white/50 hover:text-white transition-colors font-mono"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono"
               >
                 {link.label}
               </a>
@@ -56,6 +56,7 @@ export function LandingPage() {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
+            <AnimatedThemeToggler className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
             <a
               href="/dashboard"
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-mono
@@ -77,7 +78,7 @@ export function LandingPage() {
               <h1 className="hero-heading animate-fade-in-up">
                 Ryujin
               </h1>
-              <p className="mt-8 text-lg md:text-xl text-white/50 max-w-lg animate-fade-in-up animate-delay-1 font-mono">
+              <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-lg animate-fade-in-up animate-delay-1 font-mono">
                 AI-powered Bitcoin signal intelligence for everyone.
               </p>
               <p className="mt-2 text-lg md:text-xl text-[#4ade80] animate-fade-in-up animate-delay-2 font-mono">
@@ -96,8 +97,8 @@ export function LandingPage() {
                 <a
                   href="/dashboard"
                   className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-mono
-                             border border-white/20 text-white rounded-lg
-                             hover:border-white/40 hover:bg-white/5 transition-all cursor-pointer"
+                             border border-border text-foreground rounded-lg
+                             hover:border-foreground/40 hover:bg-foreground/5 transition-all cursor-pointer"
                 >
                   Explore Platform <span aria-hidden="true">&rarr;</span>
                 </a>
@@ -136,18 +137,18 @@ export function LandingPage() {
         </section>
 
         {/* ── Feature bar ─────────────────────── */}
-        <section className="border-t border-white/5">
+        <section className="border-t border-border">
           <div className="mx-auto max-w-7xl">
             <div className="grid grid-cols-2 md:grid-cols-4">
               {FEATURES.map((f, i) => (
                 <div
                   key={f.title}
                   className={`px-6 py-8 ${
-                    i < FEATURES.length - 1 ? "border-r border-white/5" : ""
+                    i < FEATURES.length - 1 ? "border-r border-border" : ""
                   }`}
                 >
-                  <p className="text-sm font-bold font-mono text-white">{f.title}</p>
-                  <p className="mt-1 text-xs text-white/40 font-mono">{f.desc}</p>
+                  <p className="text-sm font-bold font-mono text-foreground">{f.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground font-mono">{f.desc}</p>
                 </div>
               ))}
             </div>
@@ -171,7 +172,7 @@ function WorkflowCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group relative p-6 rounded-xl border border-white/5 bg-white/[0.02] hover:border-[#4ade80]/20 hover:bg-[#4ade80]/[0.03] transition-all">
+    <div className="group relative p-6 rounded-xl border border-border bg-card hover:border-[#4ade80]/20 hover:bg-[#4ade80]/[0.03] transition-all">
       <div className="flex items-start justify-between mb-4">
         <span className="text-xs font-mono text-[#4ade80]/60">{step}</span>
         <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#4ade80]/10 text-[#4ade80]">
@@ -179,7 +180,7 @@ function WorkflowCard({
         </div>
       </div>
       <h3 className="text-lg font-bold font-mono">{title}</h3>
-      <p className="mt-2 text-sm text-white/40 font-mono leading-relaxed">{desc}</p>
+      <p className="mt-2 text-sm text-muted-foreground font-mono leading-relaxed">{desc}</p>
     </div>
   );
 }

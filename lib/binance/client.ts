@@ -1,4 +1,4 @@
-import type { BinanceKline, Candle, Interval } from "@/lib/types";
+import type { BinanceKline, Candle, Interval, TradingSymbol } from "@/lib/types";
 
 const BASE_URL = "https://api.binance.com/api/v3";
 
@@ -24,13 +24,14 @@ function toCandle(k: BinanceKline): Candle {
 
 /**
  * Fetch historical klines from Binance REST API.
- * Returns up to `limit` candles for BTCUSDT at the given interval.
+ * Returns up to `limit` candles for the given symbol and interval.
  */
 export async function fetchKlines(
+  symbol: TradingSymbol,
   interval: Interval,
   limit: number = 200
 ): Promise<Candle[]> {
-  const url = `${BASE_URL}/klines?symbol=BTCUSDT&interval=${INTERVAL_MAP[interval]}&limit=${limit}`;
+  const url = `${BASE_URL}/klines?symbol=${symbol}&interval=${INTERVAL_MAP[interval]}&limit=${limit}`;
   const res = await fetch(url);
 
   if (!res.ok) {

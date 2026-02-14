@@ -48,6 +48,20 @@ export interface BinanceWSKline {
 /** Chart timeframe intervals */
 export type Interval = "1h" | "4h" | "1d" | "1w";
 
+/** Supported trading symbols */
+export type TradingSymbol = "BTCUSDT" | "ETHUSDT";
+
+export interface SymbolConfig {
+  symbol: TradingSymbol;
+  label: string;       // "BTC/USDT"
+  base: string;        // "BTC"
+}
+
+export const SYMBOLS: SymbolConfig[] = [
+  { symbol: "BTCUSDT", label: "BTC/USDT", base: "BTC" },
+  { symbol: "ETHUSDT", label: "ETH/USDT", base: "ETH" },
+];
+
 /** EMA values for a given candle */
 export interface EMAData {
   ema9: number;
@@ -122,6 +136,28 @@ export interface AIAnalysis {
   bearishFactors: string[];
   riskFactors: string[];
   indicatorBreakdown: AIIndicatorBreakdown[];
+  marketBias?: number; // -100 to +100
+}
+
+/** Pattern bias direction */
+export type PatternBias = "bullish" | "bearish" | "neutral";
+
+/** A key point on a detected pattern */
+export interface PatternKeyPoint {
+  label: string;
+  index: number;
+  price: number;
+}
+
+/** A chart pattern detected from candle data */
+export interface DetectedPattern {
+  name: string;
+  type: PatternBias;
+  confidence: number; // 0-100
+  description: string;
+  keyPoints: PatternKeyPoint[];
+  startIndex: number;
+  endIndex: number;
 }
 
 /** WebSocket connection states */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 import type { AIIndicatorBreakdown, Sentiment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -14,17 +15,21 @@ export function IndicatorBreakdown({ items }: { items: AIIndicatorBreakdown[] })
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border border-white/5 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm">📊</span>
-          <span className="text-xs font-mono font-medium text-white/80">Indicator Detail</span>
-          <span className="text-[10px] font-mono text-white/30">({items.length})</span>
+          <BarChart3 className="h-3.5 w-3.5 text-foreground/80" />
+          <span className="text-xs font-mono font-medium text-foreground/80">Indicator Detail</span>
+          <span className="text-[10px] font-mono text-muted-foreground">({items.length})</span>
         </div>
-        <span className="text-white/30 text-xs">{open ? "−" : "+"}</span>
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
       </button>
 
       {open && (
@@ -32,9 +37,9 @@ export function IndicatorBreakdown({ items }: { items: AIIndicatorBreakdown[] })
           {items.map((item) => {
             const style = SENTIMENT_STYLES[item.sentiment];
             return (
-              <div key={item.name} className="border border-white/5 rounded p-2.5">
+              <div key={item.name} className="border border-border rounded p-2.5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-mono font-medium text-white/80">
+                  <span className="text-[11px] font-mono font-medium text-foreground/80">
                     {item.name}
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -44,10 +49,10 @@ export function IndicatorBreakdown({ items }: { items: AIIndicatorBreakdown[] })
                     </span>
                   </div>
                 </div>
-                <p className="text-[10px] font-mono text-white/40 mb-1">
+                <p className="text-[10px] font-mono text-muted-foreground mb-1">
                   Value: {item.value}
                 </p>
-                <p className="text-[11px] font-mono text-white/60 leading-relaxed">
+                <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
                   {item.interpretation}
                 </p>
               </div>

@@ -37,7 +37,7 @@ export function ChartToolbar({
               "font-mono text-[11px]",
               interval === item.value
                 ? "bg-green-500/20 text-green-400 border-green-500/30"
-                : "text-white/50 hover:text-white"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {item.label}
@@ -52,7 +52,7 @@ export function ChartToolbar({
           onClick={() => onToggleOverlay("ema")}
           className={cn(
             "font-mono text-[11px]",
-            overlays.ema ? "text-blue-400" : "text-white/30"
+            overlays.ema ? "text-blue-400" : "text-muted-foreground/50"
           )}
         >
           EMA
@@ -63,7 +63,7 @@ export function ChartToolbar({
           onClick={() => onToggleOverlay("bollinger")}
           className={cn(
             "font-mono text-[11px]",
-            overlays.bollinger ? "text-purple-400" : "text-white/30"
+            overlays.bollinger ? "text-purple-400" : "text-muted-foreground/50"
           )}
         >
           BB

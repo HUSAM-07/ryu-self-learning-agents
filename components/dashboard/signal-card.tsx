@@ -43,13 +43,13 @@ export function SignalCard({ signal }: { signal: TradingSignal }) {
         >
           {signal.strength}
         </Badge>
-        <span className="text-[10px] font-mono text-white/30">
+        <span className="text-[10px] font-mono text-muted-foreground">
           Score: {signal.composite.toFixed(1)}
         </span>
       </div>
 
       {/* Confidence bar */}
-      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all duration-500", {
             "bg-green-400": signal.direction === "BUY",
@@ -64,7 +64,7 @@ export function SignalCard({ signal }: { signal: TradingSignal }) {
       <div className="mt-3 space-y-1.5">
         {signal.scores.map((s) => (
           <div key={s.name} className="flex items-center justify-between text-[10px] font-mono">
-            <span className="text-white/50">{s.name}</span>
+            <span className="text-muted-foreground">{s.name}</span>
             <span
               className={cn({
                 "text-green-400": s.score > 15,

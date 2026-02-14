@@ -67,7 +67,8 @@ Analyze the market conditions and provide a JSON response with the following str
       "sentiment": "bullish" | "bearish" | "neutral"
     }
     // ... one entry for each of: RSI(14), EMA(9/21), MACD(12,26,9), BB(20,2)
-  ]
+  ],
+  "marketBias": <-100 to +100>
 }
 
 Important:
@@ -75,5 +76,6 @@ Important:
 - Be specific about numbers — reference actual values from the data
 - If the algorithmic signal seems wrong based on your analysis, explain why
 - Include at least 2 items in each factors array
-- Keep each factor to one clear sentence`;
+- Keep each factor to one clear sentence
+- marketBias should reflect overall sentiment from all indicators and price action (-100 = extremely bearish, 0 = neutral, +100 = extremely bullish)`;
 }

@@ -1,4 +1,4 @@
-import type { BinanceWSKline, Candle, Interval, WSStatus } from "@/lib/types";
+import type { BinanceWSKline, Candle, Interval, TradingSymbol, WSStatus } from "@/lib/types";
 
 const WS_BASE = "wss://stream.binance.com:9443/ws";
 
@@ -11,7 +11,7 @@ type CandleCallback = (candle: Candle, isClosed: boolean) => void;
 /**
  * Binance WebSocket client with auto-reconnect.
  *
- * Connects to the kline stream for BTCUSDT at a given interval.
+ * Connects to the kline stream for a given symbol and interval.
  * Calls `onCandle` for every tick — `isClosed` indicates whether the
  * candle is finalized or still forming.
  */
@@ -19,21 +19,24 @@ export class BinanceWS {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private destroyed = false;
+  private symbol: TradingSymbol;
   private interval: Interval;
   private onCandle: CandleCallback;
   private onStatus: StatusCallback;
 
   constructor(
+    symbol: TradingSymbol,
     interval: Interval,
     onCandle: CandleCallback,
     onStatus: StatusCallback
   ) {
+    this.symbol = symbol;
     this.interval = interval;
     this.onCandle = onCandle;
     this.onStatus = onStatus;
   }
 
-  /** Map our interval labels to Binance WS stream names */
+  /** Build the Binance WS stream name */
   private streamName(): string {
     const map: Record<Interval, string> = {
       "1h": "1h",
@@ -41,7 +44,7 @@ export class BinanceWS {
       "1d": "1d",
       "1w": "1w",
     };
-    return `btcusdt@kline_${map[this.interval]}`;
+    return `${this.symbol.toLowerCase()}@kline_${map[this.interval]}`;
   }
 
   connect() {
