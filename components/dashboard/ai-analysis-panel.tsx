@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
-import type { AIAnalysis, TradingSignal, Candle, IndicatorData } from "@/lib/types";
+import type { AIAnalysis, TradingSignal, Candle, IndicatorData, SignalRecord } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -10,16 +10,19 @@ import { SignalCard } from "./signal-card";
 import { AnalysisSection } from "./analysis-section";
 import { IndicatorBreakdown } from "./indicator-breakdown";
 import { PatternsPanel } from "./patterns-panel";
+import { FeedbackWidget } from "./feedback-widget";
 import { detectPatterns } from "@/lib/patterns/detector";
+import { recordSignal, addFeedback, loadLearningState } from "@/lib/learning/store";
 
 interface AIAnalysisPanelProps {
   signal: TradingSignal | null;
   candles: Candle[];
   indicators: IndicatorData | null;
+  symbol: string;
+  interval: string;
 }
 
 function MarketBiasGauge({ bias }: { bias: number }) {
-  // bias: -100 to +100, map to 0-100% position
   const position = ((bias + 100) / 200) * 100;
   const label = bias > 30 ? "Bullish" : bias < -30 ? "Bearish" : "Neutral";
   const color = bias > 30 ? "text-green-400" : bias < -30 ? "text-red-400" : "text-yellow-400";
@@ -47,25 +50,41 @@ function MarketBiasGauge({ bias }: { bias: number }) {
   );
 }
 
-export function AIAnalysisPanel({ signal, candles, indicators }: AIAnalysisPanelProps) {
+export function AIAnalysisPanel({ signal, candles, indicators, symbol, interval }: AIAnalysisPanelProps) {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"analysis" | "patterns">("analysis");
+  const [currentRecord, setCurrentRecord] = useState<SignalRecord | null>(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   const patterns = useMemo(() => detectPatterns(candles), [candles]);
+
+  const handleFeedback = useCallback(
+    (rating: "accurate" | "inaccurate", note: string) => {
+      if (!currentRecord) return;
+      addFeedback(currentRecord.id, { rating, note, timestamp: Date.now() });
+      setFeedbackSubmitted(true);
+    },
+    [currentRecord]
+  );
 
   async function runAnalysis() {
     if (!signal || !indicators || candles.length === 0) return;
 
     setLoading(true);
     setError(null);
+    setFeedbackSubmitted(false);
 
     try {
+      // Include learned rules in the request
+      const state = loadLearningState();
+      const learnedRules = state.rules.map((r) => r.rule);
+
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candles, indicators, signal }),
+        body: JSON.stringify({ candles, indicators, signal, learnedRules }),
       });
 
       if (!res.ok) {
@@ -75,6 +94,11 @@ export function AIAnalysisPanel({ signal, candles, indicators }: AIAnalysisPanel
 
       const data: AIAnalysis = await res.json();
       setAnalysis(data);
+
+      // Log signal to journal
+      const entryPrice = candles[candles.length - 1].close;
+      const record = recordSignal(signal, data, entryPrice, symbol, interval);
+      setCurrentRecord(record);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
@@ -86,7 +110,9 @@ export function AIAnalysisPanel({ signal, candles, indicators }: AIAnalysisPanel
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-bold font-mono text-foreground/80">AI Analysis</h2>
-        <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Powered by Grok</p>
+        <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+          Powered by Grok &middot; Self-Learning v{loadLearningState().promptVersion}
+        </p>
       </div>
 
       {/* Tab bar */}
@@ -189,6 +215,14 @@ export function AIAnalysisPanel({ signal, candles, indicators }: AIAnalysisPanel
 
                 {/* Indicator breakdown */}
                 <IndicatorBreakdown items={analysis.indicatorBreakdown} />
+
+                <Separator className="bg-border" />
+
+                {/* Feedback widget */}
+                <FeedbackWidget
+                  onSubmit={handleFeedback}
+                  submitted={feedbackSubmitted}
+                />
               </>
             ) : !loading ? (
               <div className="text-[10px] font-mono text-muted-foreground/50 text-center py-4">
