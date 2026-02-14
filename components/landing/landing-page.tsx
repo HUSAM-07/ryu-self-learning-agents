@@ -7,7 +7,7 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 const NAV_LINKS = [
   { label: "Home", href: "#" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "About", href: "#about" },
+  { label: "Wiki", href: "/wiki" },
 ];
 
 const FEATURES = [
