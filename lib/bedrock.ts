@@ -1,13 +1,33 @@
 /**
  * AWS Bedrock client for Claude Opus 4.6
- * Uses temporary STS bearer token auth (hackathon-friendly).
+ * Uses AWS SDK with SigV4 signing (standard IAM/STS credentials).
  *
- * The bearer token is a pre-signed URL encoded as base64.
- * It expires after ~12 hours — rotate via `BEDROCK_BEARER_TOKEN` in .env.local.
+ * Credentials come from env vars: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+ * AWS_SESSION_TOKEN (optional). These are temporary STS creds — rotate as needed.
  */
 
-const BEDROCK_ENDPOINT = process.env.BEDROCK_ENDPOINT!;
-const BEDROCK_BEARER_TOKEN = process.env.BEDROCK_BEARER_TOKEN!;
+import {
+  BedrockRuntimeClient,
+  InvokeModelCommand,
+} from "@aws-sdk/client-bedrock-runtime";
+
+function getModelId() { return process.env.BEDROCK_MODEL_ID ?? "global.anthropic.claude-opus-4-6-v1"; }
+function getRegion() { return process.env.BEDROCK_REGION ?? "us-west-2"; }
+
+/** Lazily create the client so env vars are read at call time */
+let _client: BedrockRuntimeClient | null = null;
+function getClient(): BedrockRuntimeClient {
+  // Recreate if region changed (unlikely, but safe)
+  if (!_client) {
+    _client = new BedrockRuntimeClient({ region: getRegion() });
+  }
+  return _client;
+}
+
+/** Force client re-creation (e.g. after rotating credentials) */
+export function resetClient() {
+  _client = null;
+}
 
 export interface BedrockMessage {
   role: "user" | "assistant";
@@ -34,21 +54,12 @@ export interface BedrockResponse {
 /**
  * Call Claude Opus 4.6 via AWS Bedrock InvokeModel.
  *
- * @example
- * const res = await invokeBedrock({
- *   system: "You are a trading signal analyst.",
- *   messages: [{ role: "user", content: "Analyze this RSI divergence..." }],
- *   max_tokens: 1024,
- * });
- * console.log(res.content[0].text);
+ * Uses the AWS SDK which handles SigV4 signing automatically from
+ * standard AWS env vars (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+ * AWS_SESSION_TOKEN).
  */
 export async function invokeBedrock(req: BedrockRequest): Promise<BedrockResponse> {
-  if (!BEDROCK_ENDPOINT || !BEDROCK_BEARER_TOKEN) {
-    throw new Error(
-      "Missing BEDROCK_ENDPOINT or BEDROCK_BEARER_TOKEN in env. " +
-      "Copy .env.local.example → .env.local and fill in your token."
-    );
-  }
+  const client = getClient();
 
   const body = {
     anthropic_version: "bedrock-2023-05-31",
@@ -58,22 +69,17 @@ export async function invokeBedrock(req: BedrockRequest): Promise<BedrockRespons
     messages: req.messages,
   };
 
-  const res = await fetch(BEDROCK_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${BEDROCK_BEARER_TOKEN}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+  const command = new InvokeModelCommand({
+    modelId: getModelId(),
+    contentType: "application/json",
+    accept: "application/json",
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Bedrock ${res.status}: ${text}`);
-  }
+  const response = await client.send(command);
 
-  return res.json() as Promise<BedrockResponse>;
+  const text = new TextDecoder().decode(response.body);
+  return JSON.parse(text) as BedrockResponse;
 }
 
 /**

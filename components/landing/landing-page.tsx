@@ -5,7 +5,7 @@ import { AnimatedChart } from "./animated-chart";
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
-  { label: "Dashboard", href: "#dashboard" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "About", href: "#about" },
   { label: "Technical Paper", href: "#paper" },
 ];
@@ -56,13 +56,14 @@ export function LandingPage() {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-            <button
+            <a
+              href="/dashboard"
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-mono
                          border border-[#4ade80]/30 text-[#4ade80] rounded-lg
                          hover:bg-[#4ade80]/10 transition-all cursor-pointer"
             >
               Get Started
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -92,13 +93,14 @@ export function LandingPage() {
                 >
                   <span className="text-black font-extrabold">Free</span> open source
                 </button>
-                <button
+                <a
+                  href="/dashboard"
                   className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-mono
                              border border-white/20 text-white rounded-lg
                              hover:border-white/40 hover:bg-white/5 transition-all cursor-pointer"
                 >
                   Explore Platform <span aria-hidden="true">&rarr;</span>
-                </button>
+                </a>
               </div>
             </div>
 
